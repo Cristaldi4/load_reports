@@ -265,7 +265,6 @@ elif section == "Daily Energy Consumption":
         daily_energy_consumption,
         x='label',
         y='energy_kWh',
-        title='Daily Energy Consumption (Static)',
         labels={'label': 'Date', 'energy_kWh': 'Energy Consumption (kWh)'},
     )
     fig.update_layout(xaxis_title='Date', yaxis_title='Energy Consumption (kWh)')
@@ -280,20 +279,38 @@ elif section == "Load Variability":
     average_load_monthly = data.resample('ME', on='timestamp')['load_kW'].mean()
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=average_load_daily.index, y=average_load_daily.values,
-                             mode='lines', name='Daily Avg Load', line=dict(color='steelblue')))
-    fig.add_trace(go.Scatter(x=average_load_weekly.index, y=average_load_weekly.values,
-                             mode='lines', name='Weekly Avg Load', line=dict(color='orange', dash='dash')))
-    fig.add_trace(go.Scatter(x=average_load_monthly.index, y=average_load_monthly.values,
-                             mode='lines', name='Monthly Avg Load', line=dict(color='green', dash='dot')))
+    fig.add_trace(go.Scatter(
+        x=average_load_daily.index, y=average_load_daily.values,
+        mode='lines', name='Daily Avg Load', line=dict(color='steelblue')
+    ))
+    fig.add_trace(go.Scatter(
+        x=average_load_weekly.index, y=average_load_weekly.values,
+        mode='lines', name='Weekly Avg Load', line=dict(color='orange', dash='dash')
+    ))
+    fig.add_trace(go.Scatter(
+        x=average_load_monthly.index, y=average_load_monthly.values,
+        mode='lines+markers', name='Monthly Avg Load', line=dict(color='green', dash='dot')
+    ))
 
     fig.update_layout(
-        xaxis_title='Date',
-        yaxis_title='Average Load (kW)',
-        height=500
+        xaxis=dict(
+            title='Date',
+            tickformat='%b %d',
+            tickangle=45
+        ),
+        yaxis=dict(title='Average Load (kW)'),
+        height=550,
+        legend=dict(
+            orientation='h',
+            yanchor='top',
+            y=-0.3,
+            xanchor='center',
+            x=0.5
+        )
     )
 
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
+
 
 elif section == "Annual Load Duration Curve":
     st.subheader("📉 Annual Load Duration Curve")
