@@ -127,7 +127,7 @@ elif section == "Descriptive Statistics and Insights":
 
 
 elif section == "Monthly Demand Charges":
-    st.subheader("📈 Monthly Peak Load Times and Demand Charges")
+    st.subheader("📈 Monthly Demand Charges")
 
     monthly_peaks = data.loc[data.groupby(data['timestamp'].dt.to_period('M'))['load_kW'].idxmax()].copy()
     monthly_peaks['month'] = monthly_peaks['timestamp'].dt.strftime('%b %Y')
@@ -156,7 +156,6 @@ elif section == "Monthly Demand Charges":
     fig.update_layout(
         height=600,
         showlegend=True,
-        title_text="Monthly Demand Charges and Savings",
         barmode='group',
     )
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
@@ -248,7 +247,6 @@ elif section == "Monthly Peak and Average Demand":
                             font=dict(size=10, color="orange"), align="center")
 
     fig.update_layout(
-        title='Monthly Peak and Average Demand Profile',
         xaxis_title='Month',
         yaxis_title='Demand (kW)',
         barmode='group',
