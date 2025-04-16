@@ -57,7 +57,7 @@ avg_demand_charge_total = monthly_avg_demand['avg_demand_charge'].sum()
 st.sidebar.title("Report Sections")
 section = st.sidebar.radio("Jump to:", [
     "Executive Summary",
-    "Descriptive Statistics and Insights",
+    "Descriptive Statistics",
     "Monthly Peak and Average Demand",
     "Monthly Demand Charges",
     "Top 10 Peak Days",
@@ -101,8 +101,8 @@ if section == "Executive Summary":
     """)
 
 
-elif section == "Descriptive Statistics and Insights":
-    st.subheader("📊 Descriptive Statistics and Insights")
+elif section == "Descriptive Statistics":
+    st.subheader("📊 Descriptive Statistics")
 
     # Recalculate in case context needs them here
     average_load_daily = data.resample('D', on='timestamp')['load_kW'].mean()
@@ -123,7 +123,7 @@ elif section == "Descriptive Statistics and Insights":
     st.markdown(f"**Daily Average Load:** {average_load_daily.mean():.2f} kW")
     st.markdown(f"**Weekly Average Load:** {average_load_weekly.mean():.2f} kW")
     st.markdown(f"**Monthly Average Load:** {average_load_monthly.mean():.2f} kW")
-    st.markdown(f"**Grid Discovery Opportunity:** {grid_discovery_opportunity:.2f} kW")
+    st.markdown(f"**Grid Discovery Opportunity:** {grid_discovery_opportunity:.2f}")
 
 
 elif section == "Monthly Demand Charges":
