@@ -78,7 +78,7 @@ if section == "Executive Summary":
     st.markdown("**Description:** Large office complex in Newark, NJ")
     st.markdown("**Compared to:** 8-story 750k square foot office building in Essex County, NJ")
     st.markdown("**Equipment:**")
-    st.markdown("• HVAC system: PVAV with gas boiler reheat")
+    st.markdown("• HVAC system: Packaged variable air volume with gas boiler reheat")
     st.markdown("• Lighting: T12 incandescent")
     st.markdown(f"**Estimated annual demand savings:** ${avg_demand_charge_total:,.2f}")
     st.markdown(f"**Building load factor:** {load_factor:.2f}")
@@ -259,15 +259,18 @@ elif section == "Daily Energy Consumption":
     st.subheader("📅 Daily Energy Consumption")
 
     daily_energy_consumption = data.resample('D', on='timestamp')['energy_kWh'].sum().reset_index()
+    daily_energy_consumption['label'] = daily_energy_consumption['timestamp'].dt.strftime('%b %d')
+
     fig = px.line(
         daily_energy_consumption,
-        x='timestamp',
+        x='label',
         y='energy_kWh',
         title='Daily Energy Consumption (Static)',
-        labels={'timestamp': 'Date', 'energy_kWh': 'Energy Consumption (kWh)'},
+        labels={'label': 'Date', 'energy_kWh': 'Energy Consumption (kWh)'},
     )
     fig.update_layout(xaxis_title='Date', yaxis_title='Energy Consumption (kWh)')
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
+
 
 elif section == "Load Variability":
     st.subheader("📈 Load Variability")
