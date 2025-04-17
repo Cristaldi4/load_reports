@@ -236,7 +236,7 @@ elif section == "Equipment Usage":
         ))
 
     fig.update_layout(
-    margin=dict(b=100) 
+    margin=dict(b=100), 
     title="Stacked Area Plot of Energy End-Uses Over Time",
     xaxis_title="Date",
     yaxis_title="Energy (kWh)",
