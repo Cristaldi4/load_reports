@@ -129,7 +129,6 @@ elif section == "Equipment Usage":
         ))
 
     fig.update_layout(
-        title="End-Use Energy Components Over Time",
         xaxis_title="Date",
         yaxis_title="Energy (kWh)",
         xaxis=dict(
@@ -237,7 +236,6 @@ elif section == "Equipment Usage":
 
     fig.update_layout(
     margin=dict(b=100), 
-    title="Stacked Area Plot of Energy End-Uses Over Time",
     xaxis_title="Date",
     yaxis_title="Energy (kWh)",
     height=500,
@@ -272,7 +270,7 @@ elif section == "Equipment Usage":
             ))
 
         fig.update_layout(
-            title=f"End-Use Energy Components on Max Peak Day: {max_peak_day.strftime('%b %d')}",
+            title=f"Peak Day: {max_peak_day.strftime('%b %d')}",
             xaxis_title="Time of Day",
             yaxis_title="Energy (kWh)",
             xaxis=dict(
