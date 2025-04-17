@@ -29,7 +29,7 @@ season_mapping = {
 data['season'] = data['timestamp'].dt.month.map(season_mapping)
 
 # Ensure column names are correct
-expected_columns = ['timestamp', 'load_kW', 'energy_kWh']
+expected_columns = ['timestamp', 'load_kW', 'energy_kWh', 'cooling_kWh', 'exterior_lighting_kWh', 'fans_kWh', 'interior_equipment_kWh', 'interior_lighting_kWh']
 missing_columns = [col for col in expected_columns if col not in data.columns]
 if missing_columns:
     st.error(f"Missing required column(s): {', '.join(missing_columns)}")
@@ -58,6 +58,7 @@ st.sidebar.title("Report Sections")
 section = st.sidebar.radio("Jump to:", [
     "Executive Summary",
     "Descriptive Statistics",
+    "Equipment Usage",
     "Monthly Peak and Average Demand",
     "Monthly Demand Charges",
     "Top 10 Peak Days",
@@ -99,6 +100,199 @@ if section == "Executive Summary":
 
     This report should be used for analytical purposes only. All decisions should be consulted and reviewed with a licensed engineer.
     """)
+
+elif section == "Equipment Usage":
+    st.subheader("🛠️ Equipment Usage Over Time") 
+
+    end_use_columns = [
+        'cooling_kWh',
+        'exterior_lighting_kWh',
+        'fans_kWh',
+        'interior_equipment_kWh',
+        'interior_lighting_kWh'
+    ]
+
+    # Convert timestamp if needed
+    data['timestamp'] = pd.to_datetime(data['timestamp'])
+
+    # Optional: resample to daily for smoother curves if the data is noisy
+    daily_end_use = data.set_index('timestamp')[end_use_columns].resample('D').sum().reset_index()
+
+    # Build Plotly figure
+    fig = go.Figure()
+    for col in end_use_columns:
+        fig.add_trace(go.Scatter(
+            x=daily_end_use['timestamp'],
+            y=daily_end_use[col],
+            mode='lines',
+            name=col.replace('_kWh', '').replace('_', ' ').title()
+        ))
+
+    fig.update_layout(
+        title="End-Use Energy Components Over Time",
+        xaxis_title="Date",
+        yaxis_title="Energy (kWh)",
+        xaxis=dict(
+            tickformat="%b %d",
+            tickangle=45
+        ),
+        legend_title="Component",
+        height=500
+    )
+
+    st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
+
+    st.markdown("---")
+
+    st.subheader("📊 Equipment Usage Contributions")
+
+    end_use_columns = [
+        'cooling_kWh',
+        'exterior_lighting_kWh',
+        'fans_kWh',
+        'interior_equipment_kWh',
+        'interior_lighting_kWh'
+    ]
+
+    contribution_mode = st.radio("View by:", ["Total Contribution", "Daily Average Contribution"], horizontal=True)
+    chart_type = st.radio("Chart Type:", ["Bar Chart", "Pie Chart"], horizontal=True)
+
+    # Calculate values
+    if contribution_mode == "Total Contribution":
+        total_energy = data['energy_kWh'].sum()
+        contributions = data[end_use_columns].sum() / total_energy
+        title_suffix = "(Total)"
+    else:
+        daily_energy = data.resample('D', on='timestamp')['energy_kWh'].sum()
+        daily_components = data.resample('D', on='timestamp')[end_use_columns].sum()
+        contributions = (daily_components.div(daily_energy, axis=0)).mean()
+        title_suffix = "(Daily Avg)"
+
+    contributions = contributions.sort_values(ascending=False)
+    labels = [col.replace('_kWh', '').replace('_', ' ').title() for col in contributions.index]
+    values = contributions.values
+
+    # Bar Chart
+    if chart_type == "Bar Chart":
+        fig = go.Figure(data=[
+            go.Bar(
+                x=labels,
+                y=values,
+                text=[f"{v:.1%}" for v in values],
+                textposition='outside',
+                marker_color='steelblue'
+            )
+        ])
+        fig.update_layout(
+            title=f"Equipment Usage Contributions {title_suffix}",
+            xaxis_title="End-Use Component",
+            yaxis_title="Share of Energy Consumption",
+            yaxis_tickformat=".0%",
+            height=500
+        )
+
+    # Pie Chart
+    else:
+        fig = go.Figure(data=[
+            go.Pie(
+                labels=labels,
+                values=values,
+                textinfo='label+percent',
+                insidetextorientation='radial',
+                marker=dict(colors=px.colors.sequential.Viridis)
+            )
+        ])
+        fig.update_layout(
+            title=f"Equipment Usage Contributions {title_suffix}",
+            height=500
+        )
+
+    st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
+
+    st.markdown("---")
+
+    st.subheader("⛰️ Stacked Area Plot of Equipment Usage Over Time")
+
+    end_use_columns = [
+        'cooling_kWh',
+        'exterior_lighting_kWh',
+        'fans_kWh',
+        'interior_equipment_kWh',
+        'interior_lighting_kWh'
+    ]
+
+    # Ensure data is sorted by time
+    data_sorted = data.sort_values('timestamp')
+
+    fig = go.Figure()
+
+    for col in end_use_columns:
+        fig.add_trace(go.Scatter(
+            x=data_sorted['timestamp'],
+            y=data_sorted[col],
+            mode='lines',
+            stackgroup='one',
+            name=col.replace('_kWh', '').replace('_', ' ').title()
+        ))
+
+    fig.update_layout(
+    margin=dict(b=100) 
+    title="Stacked Area Plot of Energy End-Uses Over Time",
+    xaxis_title="Date",
+    yaxis_title="Energy (kWh)",
+    height=500,
+    legend=dict(
+        orientation="h",
+        yanchor="top",
+        y=-0.3,         # Negative y moves legend below chart
+        xanchor="center",
+        x=0.5
+    )
+)
+
+    st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
+
+    st.markdown("---")
+
+    st.subheader("📊 Equipment Usage for Peak Day")
+
+    daily_peaks = data.resample('D', on='timestamp')['load_kW'].max()
+    max_peak_day = daily_peaks.idxmax().date()
+    day_data = data[data['timestamp'].dt.date == max_peak_day].copy()
+
+    if not day_data.empty:
+        fig = go.Figure()
+
+        for col in end_use_columns:
+            fig.add_trace(go.Scatter(
+                x=day_data['timestamp'],
+                y=day_data[col],
+                mode='lines',
+                name=col.replace('_kWh', '').replace('_', ' ').title()
+            ))
+
+        fig.update_layout(
+            title=f"End-Use Energy Components on Max Peak Day: {max_peak_day.strftime('%b %d')}",
+            xaxis_title="Time of Day",
+            yaxis_title="Energy (kWh)",
+            xaxis=dict(
+                tickformat="%H:%M",
+                dtick=3600000,  # 1 hour in ms
+            ),
+            height=500,
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.3,
+                xanchor="center",
+                x=0.5
+            ),
+            margin=dict(b=100)
+        )
+
+        st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
+    else:
+        st.warning("No data available for the peak demand day.")
 
 
 elif section == "Descriptive Statistics":
