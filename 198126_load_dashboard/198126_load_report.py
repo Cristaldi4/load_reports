@@ -533,13 +533,12 @@ elif section == "Annual Load Duration Curve":
     ))
 
     # Add threshold lines
-    fig.add_hline(y=base_load_threshold, line_dash="dot", line_color="green",
-                  annotation_text=f"Base Load: {base_load_threshold:.1f} kW", annotation_position="bottom right")
+    fig.add_hline(y=base_load_threshold, line_dash="dash", line_color="green",
+                  annotation_text=f"Base Load: {base_load_threshold:.1f} kW", annotation_position="top right")
     fig.add_hline(y=critical_load_threshold, line_dash="dash", line_color="red",
                   annotation_text=f"Critical Load: {critical_load_threshold:.1f} kW", annotation_position="top right")
 
     fig.update_layout(
-        title='Annual Load Duration Curve (Hourly Axis)',
         xaxis_title='Cumulative Hours',
         yaxis_title='Load (kW)',
         height=500,
@@ -558,100 +557,132 @@ elif section == "Annual Load Duration Curve":
 
     st.subheader("📈 Slope Analysis with Percentile Thresholds")
 
+    # Sort the load data
     ldc = data['load_kW'].sort_values(ascending=False).reset_index(drop=True)
-    exceedance_percentage = np.linspace(0, 100, len(ldc))
 
+    # Use cumulative hour indices (15-minute interval → 4 per hour)
+    hour_indices = np.arange(1, len(ldc) + 1) / 4
+
+    # Percentile thresholds
     p90 = ldc.quantile(0.90)
     p50 = ldc.quantile(0.50)
     p10 = ldc.quantile(0.10)
 
+    # Slope calculations
     slope_high_mid = (p50 - p90) / (0.50 - 0.90)
     slope_mid_low = (p10 - p50) / (0.10 - 0.50)
 
+    # Plot with Plotly
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=exceedance_percentage, y=ldc, mode='lines', name='Load Duration Curve (kW)', line=dict(color='blue')))
+    fig.add_trace(go.Scatter(x=hour_indices, y=ldc, mode='lines', name='Load Duration Curve (kW)', line=dict(color='blue')))
     fig.add_hline(y=p90, line_dash='dash', line_color='green',
-                  annotation_text=f"90th percentile: {p90:.1f} kW", annotation_position="top left")
+                  annotation_text=f"90th percentile: {p90:.1f} kW", annotation_position="top right")
     fig.add_hline(y=p50, line_dash='dash', line_color='orange',
-                  annotation_text=f"50th percentile: {p50:.1f} kW", annotation_position="top left")
+                  annotation_text=f"50th percentile: {p50:.1f} kW", annotation_position="top right")
     fig.add_hline(y=p10, line_dash='dash', line_color='red',
-                  annotation_text=f"10th percentile: {p10:.1f} kW", annotation_position="top left")
+                  annotation_text=f"10th percentile: {p10:.1f} kW", annotation_position="top right")
 
     fig.update_layout(
-        xaxis_title='Exceedance (%)',
+        xaxis_title='Cumulative Hours',
         yaxis_title='Load (kW)',
-        height=500
+        height=500,
+        legend=dict(orientation="h", y=-0.2)
     )
 
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
 
-
+    # Display metrics
+    st.markdown("### Slope Summary")
     st.write(f"90th percentile load: {p90:.2f} kW")
     st.write(f"50th percentile load: {p50:.2f} kW")
     st.write(f"10th percentile load: {p10:.2f} kW")
+    st.markdown("---")
     st.write(f"**Slope (90% to 50%)**: {slope_high_mid:.2f} kW/percentile")
     st.write(f"**Slope (50% to 10%)**: {slope_mid_low:.2f} kW/percentile")
+
 
     st.markdown("---")
 
     st.subheader("📊 Slope Analysis with Rate of Change")
 
+    # Sort the load data
     ldc = data['load_kW'].sort_values(ascending=False).reset_index(drop=True)
-    ldc_derivative = ldc.diff().fillna(0)
-    exceedance = (ldc.index + 1) / len(ldc) * 100
 
+    # Cumulative hours based on 15-min interval
+    hour_indices = np.arange(1, len(ldc) + 1) / 4
+
+    # First-order difference
+    ldc_derivative = ldc.diff().fillna(0)
+
+    # Create dual-axis plot
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
+    # LDC trace
     fig.add_trace(
-        go.Scatter(x=exceedance, y=ldc, name="Load Duration Curve (kW)", line=dict(color='blue')),
+        go.Scatter(x=hour_indices, y=ldc, name="Load Duration Curve (kW)", line=dict(color='blue')),
         secondary_y=False
     )
 
+    # Rate of Change trace
     fig.add_trace(
-        go.Scatter(x=exceedance, y=ldc_derivative, name="Rate of Change (ΔkW)", line=dict(color='red', dash='dash')),
+        go.Scatter(x=hour_indices, y=ldc_derivative, name="Rate of Change (ΔkW)", line=dict(color='red', dash='dash')),
         secondary_y=True
     )
 
+    # Layout
     fig.update_layout(
-        xaxis_title="Exceedance (%)",
+        xaxis_title="Cumulative Hours",
         yaxis_title="Load (kW)",
         yaxis2_title="Rate of Change (ΔkW)",
-        legend=dict(x=0.01, y=0.99),
-        height=500
+        height=500,
+        legend=dict(orientation="h", y=-0.2)
     )
 
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
 
 
+
 elif section == "Peak Day Load Duration Curve":
     st.subheader("📅 Peak Day Load Duration Curve")
 
+    # Identify the peak day
     daily_peaks = data.resample('D', on='timestamp')['load_kW'].max()
     max_peak_day = daily_peaks.idxmax().date()
 
+    # Pull and sort the peak day load data
     day_data = data[data['timestamp'].dt.date == max_peak_day].copy()
     ldc_day = day_data['load_kW'].sort_values(ascending=False).reset_index(drop=True)
-    n = len(ldc_day)
-    exceedance = (ldc_day.index + 1) / n * 100
 
-    fig = px.line(x=exceedance, y=ldc_day, labels={'x': 'Exceedance (%)', 'y': 'Load (kW)'})
+    # Convert intervals to cumulative hours
+    hour_indices = np.arange(1, len(ldc_day) + 1) / 4
+
+    # Plot
+    fig = px.line(
+        x=hour_indices,
+        y=ldc_day,
+        labels={'x': 'Cumulative Hours', 'y': 'Load (kW)'}
+    )
     fig.update_layout(
-        title=f'Peak Day: {max_peak_day.strftime("%B %d")}',
+        title=f'Peak Day Load Duration Curve: {max_peak_day.strftime("%B %d")}',
         height=500
     )
+
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
 
     st.markdown("---")
 
     st.subheader("📈 Slope Analysis with Percentile Thresholds")
 
+    # Find peak day
     daily_peaks = data.resample('D', on='timestamp')['load_kW'].max()
     max_peak_day = daily_peaks.idxmax().date()
     day_data = data[data['timestamp'].dt.date == max_peak_day].copy()
     ldc_day = day_data['load_kW'].sort_values(ascending=False).reset_index(drop=True)
-    n = len(ldc_day)
-    exceedance = (ldc_day.index + 1) / n * 100
 
+    # Convert index to hours (15-minute intervals = 0.25 hours each)
+    hour_indices = np.arange(1, len(ldc_day) + 1) / 4
+
+    # Get percentiles and slopes
     p90 = ldc_day.quantile(0.90)
     p50 = ldc_day.quantile(0.50)
     p10 = ldc_day.quantile(0.10)
@@ -659,17 +690,23 @@ elif section == "Peak Day Load Duration Curve":
     slope_day_high_mid = (p50 - p90) / (0.50 - 0.90)
     slope_day_mid_low = (p10 - p50) / (0.10 - 0.50)
 
+    # Plot
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=exceedance, y=ldc_day, mode='lines', name='Load Duration Curve (kW)', line=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=[0, 100], y=[p90, p90], mode='lines', name=f'90th percentile: {p90:.1f} kW', line=dict(color='green', dash='dash')))
-    fig.add_trace(go.Scatter(x=[0, 100], y=[p50, p50], mode='lines', name=f'50th percentile: {p50:.1f} kW', line=dict(color='orange', dash='dash')))
-    fig.add_trace(go.Scatter(x=[0, 100], y=[p10, p10], mode='lines', name=f'10th percentile: {p10:.1f} kW', line=dict(color='red', dash='dash')))
+    fig.add_trace(go.Scatter(x=hour_indices, y=ldc_day, mode='lines',
+                             name='Load Duration Curve (kW)', line=dict(color='blue')))
+    fig.add_hline(y=p90, line_dash='dash', line_color='green',
+                  annotation_text=f"90th percentile: {p90:.1f} kW", annotation_position="top right")
+    fig.add_hline(y=p50, line_dash='dash', line_color='orange',
+                  annotation_text=f"50th percentile: {p50:.1f} kW", annotation_position="top right")
+    fig.add_hline(y=p10, line_dash='dash', line_color='red',
+                  annotation_text=f"10th percentile: {p10:.1f} kW", annotation_position="top right")
 
     fig.update_layout(
-        xaxis_title='Exceedance (%)',
+        xaxis_title='Cumulative Hours',
         yaxis_title='Load (kW)',
         height=500
     )
+
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
 
     st.markdown("### Slope Analysis")
@@ -683,29 +720,44 @@ elif section == "Peak Day Load Duration Curve":
 
     st.subheader("📊 Slope Analysis with Rate of Change")
 
+    # Identify peak day
     daily_peaks = data.resample('D', on='timestamp')['load_kW'].max()
     max_peak_day = daily_peaks.idxmax().date()
-
     day_data = data[data['timestamp'].dt.date == max_peak_day].copy()
-    ldc_day = day_data['load_kW'].sort_values(ascending=False).reset_index(drop=True)
-    n = len(ldc_day)
-    exceedance = (ldc_day.index + 1) / n * 100
 
+    # Load Duration Curve & Derivative
+    ldc_day = day_data['load_kW'].sort_values(ascending=False).reset_index(drop=True)
     ldc_derivative = ldc_day.diff().fillna(0)
 
+    # Convert 15-min intervals to cumulative hours
+    hour_indices = np.arange(1, len(ldc_day) + 1) / 4
+
+    # Plot with secondary y-axis
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-    fig.add_trace(go.Scatter(x=exceedance, y=ldc_day, mode='lines', name='Load Duration Curve (kW)', line=dict(color='blue')), secondary_y=False)
-    fig.add_trace(go.Scatter(x=exceedance, y=ldc_derivative, mode='lines', name='Rate of Change (ΔkW)', line=dict(color='red', dash='dash')), secondary_y=True)
+    fig.add_trace(
+        go.Scatter(x=hour_indices, y=ldc_day, mode='lines',
+                   name='Load Duration Curve (kW)', line=dict(color='blue')),
+        secondary_y=False
+    )
+
+    fig.add_trace(
+        go.Scatter(x=hour_indices, y=ldc_derivative, mode='lines',
+                   name='Rate of Change (ΔkW)', line=dict(color='red', dash='dash')),
+        secondary_y=True
+    )
 
     fig.update_layout(
-    xaxis_title='Exceedance (%)',
-    height=500,
-    legend=dict(x=0.5, y=-0.2, xanchor='center', orientation='h')
-)
-
+        xaxis_title='Cumulative Hours',
+        yaxis_title='Load (kW)',
+        yaxis2_title='Rate of Change (ΔkW)',
+        height=500,
+        legend=dict(orientation="h", y=-0.2)
+    )
+    
 
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
+
 
 elif section == "Load Duration Curve Comparison: Annual vs Peak Day":
     st.subheader("📊 Load Duration Curve Comparison: Annual vs Peak Day")
