@@ -507,34 +507,48 @@ elif section == "Load Variability":
 elif section == "Annual Load Duration Curve":
     st.subheader("📉 Annual Load Duration Curve")
 
+    # Sort load data in ascending order
     sorted_load = data['load_kW'].sort_values(ascending=False).reset_index(drop=True)
-    exceedance_percentage = np.linspace(0, 100, len(sorted_load))
 
-    peak_demand = data['load_kW'].max()
-    base_load_threshold = data['load_kW'].quantile(0.05)
+    # Convert 15-minute intervals to cumulative hours
+    hour_indices = np.arange(1, len(sorted_load) + 1) / 4  # 4 intervals per hour
+
+    # Define thresholds
+    peak_demand = sorted_load.max()
+    base_load_threshold = sorted_load.quantile(0.05)
     critical_load_threshold = 0.75 * peak_demand
 
+    # Find load periods
     high_load_periods = data[data['load_kW'] > data['load_kW'].quantile(0.9)]
     critical_load_periods = data[data['load_kW'] >= critical_load_threshold]
 
+    # Plot using Plotly
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=exceedance_percentage, y=sorted_load,
-                             mode='lines', name='Load Duration Curve', line=dict(color='blue')))
-    fig.add_hline(y=base_load_threshold, line_dash='dash', line_color='green',
-                  annotation_text=f"Base Load: {int(base_load_threshold)} kW",
-                  annotation_position="top left")
-    fig.add_hline(y=critical_load_threshold, line_dash='dash', line_color='red',
-                  annotation_text=f"Critical Load: {int(critical_load_threshold)} kW",
-                  annotation_position="top left")
+    fig.add_trace(go.Scatter(
+        x=hour_indices,
+        y=sorted_load,
+        mode='lines',
+        name='Load Duration Curve',
+        line=dict(color='steelblue')
+    ))
+
+    # Add threshold lines
+    fig.add_hline(y=base_load_threshold, line_dash="dot", line_color="green",
+                  annotation_text=f"Base Load: {base_load_threshold:.1f} kW", annotation_position="bottom right")
+    fig.add_hline(y=critical_load_threshold, line_dash="dash", line_color="red",
+                  annotation_text=f"Critical Load: {critical_load_threshold:.1f} kW", annotation_position="top right")
 
     fig.update_layout(
-        xaxis_title='Exceedance Percentage (%)',
+        title='Annual Load Duration Curve (Hourly Axis)',
+        xaxis_title='Cumulative Hours',
         yaxis_title='Load (kW)',
-        height=500
+        height=500,
+        legend=dict(orientation="h", y=-0.2)
     )
 
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
 
+    # Summary metrics
     st.write(f"**Base Load Threshold (kW):** {round(base_load_threshold, 2)}")
     st.write(f"**Critical Load Threshold (kW):** {round(critical_load_threshold, 2)}")
     st.write(f"**High Load Periods (>90th percentile):** {len(high_load_periods)}")
