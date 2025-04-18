@@ -663,7 +663,7 @@ elif section == "Peak Day Load Duration Curve":
         labels={'x': 'Cumulative Hours', 'y': 'Load (kW)'}
     )
     fig.update_layout(
-        title=f'Peak Day Load Duration Curve: {max_peak_day.strftime("%B %d")}',
+        title=f'Peak Day: {max_peak_day.strftime("%B %d")}',
         height=500
     )
 
