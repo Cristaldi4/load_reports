@@ -135,8 +135,13 @@ elif section == "Equipment Usage":
             tickformat="%b %d",
             tickangle=45
         ),
-        legend_title="Component",
-        height=500
+        legend=dict(
+        orientation="h",
+        yanchor="top",
+        y=-0.3,         # Negative y moves legend below chart
+        xanchor="center",
+        x=0.5
+    )
     )
 
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
