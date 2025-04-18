@@ -891,7 +891,14 @@ elif section == "Load Trends for Top 3 Peak Days":
         xaxis=dict(title='Hour of the Day', tickmode='array', tickvals=list(range(24)), ticktext=[f"{h:02}:00" for h in range(24)]),
         yaxis=dict(title='Load (kW)', range=[0, max_energy_global]),
         yaxis2=dict(overlaying='y', side='right', title='% of Load', range=[0, 100]),
-        height=500
+        height=500,
+        legend=dict(
+        orientation="h",
+        yanchor="top",
+        y=-0.3,         # Negative y moves legend below chart
+        xanchor="center",
+        x=0.5
+    )
     )
 
     st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
