@@ -76,8 +76,8 @@ section = st.sidebar.radio("Jump to:", [
 if section == "Executive Summary":
     st.subheader("📋 Executive Summary")
 
-    st.markdown("**Description:** Large office complex in Newark, NJ")
-    st.markdown("**Compared to:** 8-story 750k square foot office building in Essex County, NJ")
+    st.markdown("**Description:** Large office building in Newark, NJ")
+    st.markdown("**Compare to:** 8-story 750k square foot office building in Essex County, NJ")
     st.markdown("**Equipment:**")
     st.markdown("• HVAC system: Packaged variable air volume with gas boiler reheat")
     st.markdown("• Lighting: T12 incandescent")
