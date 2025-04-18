@@ -8,8 +8,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-st.set_page_config(page_title="Essex County Load Report", layout="wide")
-st.title("🏢 Essex County Office: Load Profile Dashboard")
+st.set_page_config(page_title="Office Building Load Report", layout="wide")
+st.title("🏢 Office Building Load Profile Dashboard")
 st.markdown("Prepared by Grid Discovery  ")
 st.markdown("---")
 
